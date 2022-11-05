@@ -12,7 +12,6 @@ def HTTP_SWAP(httpSwap: str) -> request._UrlopenRet:
         url = httpSwap["url"] + "?" + params
     else:
         url = httpSwap["url"]
-    print(url)
     req = request.Request(url, data=body, method=method)
     for k, v in headersMap.items():
         req.add_header(k, v)
@@ -21,14 +20,15 @@ def HTTP_SWAP(httpSwap: str) -> request._UrlopenRet:
 
 # TEST
 # $ python -u py.py
-r = HTTP_SWAP("""{
-		"url": "https://httpbingo.org/post",
-        "method":"POST",
-        "body":"bbb=aaa",
-		"headers": {
-            "user-agent": "HTTP_SWAP",
-            "X-TEST": "HTTP_SWAP TEST VALUE"
-        }
+r = HTTP_SWAP("""
+{
+    "url": "https://httpbingo.org/post",
+    "method":"POST",
+    "body":"bbb=aaa",
+    "headers": {
+        "user-agent": "HTTP_SWAP",
+        "X-TEST": "HTTP_SWAP TEST VALUE"
+    }
 }
 """)
 
