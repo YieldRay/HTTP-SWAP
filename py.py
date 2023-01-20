@@ -3,19 +3,64 @@ from urllib.request import urlopen, Request
 from urllib.parse import urlparse, urlunparse, urlencode
 
 
-def HTTP_SWAP(httpSwap: map | str):
+def _set_content_type_if_unset(h: dict, v: str):
+    if "content-type" not in map(lambda k: k.lower(), h.keys()):
+        h["content-type"] = v
+
+
+def HTTP_SWAP(httpSwap: dict | str):
     if type(httpSwap) == str:
-        httpSwap = json.loads(httpSwap)
-    body: bytes = httpSwap.get("body", "").encode()
-    method: str = httpSwap.get("method", "GET")
+        httpSwap: dict = json.loads(httpSwap)
+
+    # raise Exception('Cannot set "body","form","json" at the same time')
+
+    method: str = "GET"
+
     headersMap: dict = httpSwap.get("headers", {})
+
+    data: bytes | None = None
+
+    try:
+        json_body: dict | str = httpSwap["json"]
+        data = json.dumps(json_body).encode()
+        _set_content_type_if_unset(headersMap, "application/json")
+        method = "POST"
+    except TypeError as e:
+        raise e
+    except:
+        pass
+
+    try:
+        form: dict | str = httpSwap["form"]
+        if type(form) == str:
+            data = form.encode()
+        if type(form) == dict:
+            data = urlencode(form).encode()
+        _set_content_type_if_unset(
+            headersMap, "application/x-www-form-urlencoded")
+        method = "POST"
+    except:
+        pass
+
+    try:
+        body: str = httpSwap["body"]
+        data = body.encode()
+        method = "POST"
+    except:
+        pass
+
+    if "method" in httpSwap:
+        method = httpSwap.get("method")
     url = urlparse(httpSwap["url"])
     query = urlencode(dict(url.params, **(httpSwap.get("query", {}))))
     url = urlunparse((url.scheme, url.netloc, url.path,
                      url.params, query, url.fragment))
-    req = Request(url, data=body, method=method)
+
+    req = Request(url, data=data, method=method)
+
     for k, v in headersMap.items():
         req.add_header(k, v)
+
     return urlopen(req)
 
 
@@ -27,8 +72,7 @@ with HTTP_SWAP(
     {
         "url": "https://httpbingo.org/post",
         "query": {"q": "123"},
-        "method": "POST",
-        "body": "bbb=aaa",
+        "json": {"abc": "def", "ghi": "jkl"},
         "headers": {
             "user-agent": "HTTP_SWAP",
             "X-TEST": "HTTP_SWAP TEST VALUE"
