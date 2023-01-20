@@ -8,7 +8,7 @@ just for fun
     "method": "GET|POST|HEAD|OPTIONS|PUT|PATCH|DELETE|TRACE|CONNECT",
     "headers": { "<string>": "<string>" },
     "body": "<string>",
-    "params": { "<string>": "<string>" }
+    "query": { "<string>": "<string>" }
 }
 ```
 

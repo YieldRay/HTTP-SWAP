@@ -1,24 +1,23 @@
 <?php
-function HTTP_SWAP(string $httpSwap, $callback = true)
+function HTTP_SWAP(array|string $httpSwap, $callback = true)
 {
-    $httpSwap = json_decode($httpSwap, true);
+    if (is_string($httpSwap))
+        $httpSwap = json_decode($httpSwap, true);
     // def param (for higher version of php, use ??)
-    $url  = $httpSwap["url"];
+    $url  =  parse_url($httpSwap["url"]);
     $method = array_key_exists("method", $httpSwap)  ? $httpSwap["method"] : "GET";
-    $params = array_key_exists("params", $httpSwap) ? $httpSwap["params"] : [];
+    $query = array_key_exists("query", $httpSwap) ? $httpSwap["query"] : [];
     $headers = array_key_exists("headers", $httpSwap) ? $httpSwap["headers"] : [];
     $redirect = array_key_exists("redirect", $httpSwap) ? $httpSwap["headers"] : "follow";
     $body = array_key_exists("body", $httpSwap) ? $httpSwap["body"] : "";
+
     // do
     $headersArray = [];
     foreach ($headers as $key => $value) {
         $headersArray[$key] = "$key: $value";
     }
-    if ($params) $url = "$url?";
-    foreach ($params as $key => $value) {
-        $url = "${url}${key}=${value}&";
-    }
-    if ($params) $url = substr($url, 0, strlen($url) - 1);
+    $query = http_build_query($query);
+    $url = sprintf("%s://%s%s?%s", $url["scheme"], $url["host"], $url["path"], $query);
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -29,7 +28,7 @@ function HTTP_SWAP(string $httpSwap, $callback = true)
     if ($redirect == "manual") curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
     // if ($redirect == "error")
 
-    //! Handle $callback, which can be bool or function
+    //! Handle $callback, which can be a bool or function
     if ($callback instanceof Closure) $callback($ch);
     else {
         if ($callback === true) curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -42,11 +41,20 @@ function HTTP_SWAP(string $httpSwap, $callback = true)
 
 // TEST
 // $ php.php
-$res =  HTTP_SWAP(<<<STR
+$res =  HTTP_SWAP(<<<JSON
 {
     "url": "https://httpbingo.org/get",
-    "params": {"k": "v"},
+    "query": {"k": "v"},
     "headers": {"X-TEST": "HTTP_SWAP TEST VALUE"}
 }
-STR);
+JSON);
+/* passing an array is also valid
+$res =  HTTP_SWAP(
+    [
+        "url" => "https://httpbingo.org/get",
+        "query" => ["k" => "v"],
+        "headers" => ["X-TEST" => "HTTP_SWAP TEST VALUE"]
+    ]
+);
+*/
 print_r(json_decode($res));

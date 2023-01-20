@@ -4,18 +4,26 @@ interface HTTP_SWAP {
     headers?: { [key: string]: string } | [string, string][];
     redirect?: "follow" | "manual" | "error";
     body?: string;
-    params?: { [key: string]: string } | [string, string][];
+    query?: { [key: string]: string } | [string, string][];
 }
 
-export default function HTTP_SWAP(httpSwap: HTTP_SWAP) {
+function is_http_swap(x: unknown): x is HTTP_SWAP {
+    if (typeof x !== "object" || x === null) return false;
+    return "url" in x;
+}
+
+export default function HTTP_SWAP(httpSwap: HTTP_SWAP | string) {
+    if (typeof httpSwap === "string") httpSwap = JSON.parse(httpSwap);
+    if (!is_http_swap(httpSwap)) throw new Error("`url` is not set");
+
     const url = new URL(httpSwap.url);
-    let params: [string, string][] = [];
-    if (Array.isArray(httpSwap.params)) {
-        ({ params } = httpSwap);
-    } else if (httpSwap.params) {
-        params = Object.entries(httpSwap.params);
+    let query: [string, string][] = [];
+    if (Array.isArray(httpSwap.query)) {
+        ({ query } = httpSwap);
+    } else if (httpSwap.query) {
+        query = Object.entries(httpSwap.query);
     }
-    params.forEach(([k, v]) => url.searchParams.append(k, v));
+    query.forEach(([k, v]) => url.searchParams.append(k, v));
     let headers: { [key: string]: string } = {};
     if (Array.isArray(httpSwap.headers)) {
         httpSwap.headers.forEach(([k, v]) => (headers[k] = v));
@@ -34,13 +42,21 @@ export default function HTTP_SWAP(httpSwap: HTTP_SWAP) {
 // $ deno run --allow-net ts.ts
 // $ node ts.ts
 
+/* passing an object is also valid
 HTTP_SWAP({
     url: "https://httpbingo.org/get",
-    params: { k: "v" },
+    query: { k: "v" },
     headers: { "X-TEST": "HTTP_SWAP TEST VALUE" },
-})
+});
+*/
+
+HTTP_SWAP(`{
+    "url": "https://httpbingo.org/get",
+    "query": { "k": "v" },
+    "headers": { "X-TEST": "HTTP_SWAP TEST VALUE" }
+}`)
     .then((res) => {
-        console.log("Request: %s", res.url);
+        console.log(`${res.status} ${res.statusText} ${res.url}`);
         return res.text();
     })
     .then(console.log);

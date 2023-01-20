@@ -16,7 +16,7 @@ func HTTP_SWAP(httpSwap string) (res *http.Response, err error) {
 	var headers *http.Header = &http.Header{}
 	var body string = ""
 	// var redirect string = ""
-	params := url.Values{}
+	query := url.Values{}
 	// parse from json
 	var parsed any
 	json.Unmarshal([]byte(httpSwap), &parsed)
@@ -37,13 +37,13 @@ func HTTP_SWAP(httpSwap string) (res *http.Response, err error) {
 				headers.Add(h, v.(string))
 			}
 		}
-		if k == "params" {
-			paramsMap := v.(map[string]any)
-			for p, v := range paramsMap {
-				params.Add(p, v.(string))
+		if k == "query" {
+			queryMap := v.(map[string]any)
+			for p, v := range queryMap {
+				query.Add(p, v.(string))
 			}
 		}
-		reqURL.RawQuery = params.Encode()
+		reqURL.RawQuery = query.Encode()
 		urlPath := reqURL.String()
 
 		var req *http.Request
@@ -60,7 +60,7 @@ func HTTP_SWAP(httpSwap string) (res *http.Response, err error) {
 func main() {
 	r, _ := HTTP_SWAP(`{
 		"url": "https://httpbingo.org/get",
-		"params": {"k": "v"},
+		"query": {"k": "v"},
 		"headers": {"X-TEST": "HTTP_SWAP TEST VALUE"}
 	}`)
 	u := r.Request.URL.String()
